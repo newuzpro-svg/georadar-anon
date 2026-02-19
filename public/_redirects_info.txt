@@ -1,0 +1,18 @@
+/* FOR NETLIFY: Redirect all requests to index.html for React Router SPA support */
+/* This ensures that refreshing the page on /chat or /profile doesn't give a 404 */
+
+/* Proxy API requests to your production backend if needed, 
+   but for Socket.io it's better to use an absolute URL in the code. */
+
+/* Catch-all for React Router */
+/*
+/api/*  https://your-backend-url.com/api/:splat  200
+*/
+/*
+/socket.io/*  https://your-backend-url.com/socket.io/:splat  200
+*/
+
+/* Standard SPA redirect */
+/*
+/*  /index.html  200
+*/

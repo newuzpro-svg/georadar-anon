@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: #0a0e1a;
+  color: #e0e8f0;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #131a2e;
+}
+::-webkit-scrollbar-thumb {
+  background: #1a3a4a;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #00e5ff55;
+}
+
+/* Radar gradient overlay */
+.radar-gradient {
+  background: radial-gradient(circle, transparent 0%, #0a0e1a 70%);
+}
+
+/* Glass effect */
+.glass {
+  background: rgba(19, 26, 46, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 229, 255, 0.1);
+}
+
+.glass-strong {
+  background: rgba(19, 26, 46, 0.95);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(0, 229, 255, 0.15);
+}
+
+/* Glow text */
+.text-glow {
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.5), 0 0 20px rgba(0, 229, 255, 0.2);
+}
+
+/* Pulse animation for online dots */
+.pulse-green {
+  animation: pulseGreen 2s ease-in-out infinite;
+}
+
+@keyframes pulseGreen {
+  0%, 100% { box-shadow: 0 0 4px #39ff14; }
+  50% { box-shadow: 0 0 12px #39ff14, 0 0 24px #39ff1444; }
+}
+
+/* Input focus glow */
+input:focus, textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 229, 255, 0.3);
+}
+
+/* Button hover glow */
+.btn-glow:hover {
+  box-shadow: 0 0 15px rgba(0, 229, 255, 0.4), 0 0 30px rgba(0, 229, 255, 0.15);
+}
+
+/* Scan line effect */
+.scan-line {
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #00e5ff33, transparent);
+  animation: scanLine 4s linear infinite;
+}
+
+@keyframes scanLine {
+  0% { top: 0; }
+  100% { top: 100%; }
+}
+
+/* Message bubble */
+.msg-sent {
+  background: linear-gradient(135deg, #0d4a5a, #0a3a4a);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+}
+
+.msg-received {
+  background: rgba(30, 40, 65, 0.8);
+  border: 1px solid rgba(122, 139, 160, 0.15);
+}
