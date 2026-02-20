@@ -13,7 +13,7 @@ export default function Header({
             {/* Left: Logo & status */}
             <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-radar-accent to-cyan-600 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-radar-accent to-purple-800 flex items-center justify-center">
                         <span className="text-sm font-bold text-radar-bg">📡</span>
                     </div>
                     <div>

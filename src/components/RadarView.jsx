@@ -74,22 +74,17 @@ export default function RadarView({ coords, nearbyUsers, radius, onSelectUser, u
             ctx.fillRect(0, 0, dimensions.width, dimensions.height);
 
             // Range rings
-            const rings = 4;
-            for (let i = 1; i <= rings; i++) {
-                const r = (maxRadius / rings) * i;
+            ctx.strokeStyle = '#2d1b4d';
+            ctx.lineWidth = 1;
+            [0.25, 0.5, 0.75, 1].forEach((r) => {
                 ctx.beginPath();
-                ctx.arc(cx, cy, r, 0, Math.PI * 2);
-                ctx.strokeStyle =
-                    i === rings
-                        ? 'rgba(0, 229, 255, 0.25)'
-                        : 'rgba(0, 229, 255, 0.08)';
-                ctx.lineWidth = i === rings ? 1.5 : 0.5;
+                ctx.arc(cx, cy, maxRadius * r, 0, Math.PI * 2);
                 ctx.stroke();
-            }
+            });
 
             // Crosshairs
-            ctx.strokeStyle = 'rgba(0, 229, 255, 0.06)';
-            ctx.lineWidth = 0.5;
+            ctx.strokeStyle = '#2d1b4d';
+            ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.moveTo(cx - maxRadius, cy);
             ctx.lineTo(cx + maxRadius, cy);
@@ -113,8 +108,8 @@ export default function RadarView({ coords, nearbyUsers, radius, onSelectUser, u
             // Sweep gradient (cone)
             const sweepGrad = ctx.createConicGradient(sweepAngle - 0.5, cx, cy);
             sweepGrad.addColorStop(0, 'transparent');
-            sweepGrad.addColorStop(0.12, 'rgba(0, 229, 255, 0.12)');
-            sweepGrad.addColorStop(0.15, 'rgba(0, 229, 255, 0.04)');
+            sweepGrad.addColorStop(0.12, 'rgba(168, 85, 247, 0.15)');
+            sweepGrad.addColorStop(0.15, 'rgba(168, 85, 247, 0.05)');
             sweepGrad.addColorStop(0.2, 'transparent');
             sweepGrad.addColorStop(1, 'transparent');
 
@@ -130,7 +125,7 @@ export default function RadarView({ coords, nearbyUsers, radius, onSelectUser, u
                 cx + Math.cos(sweepAngle) * maxRadius,
                 cy + Math.sin(sweepAngle) * maxRadius
             );
-            ctx.strokeStyle = 'rgba(0, 229, 255, 0.4)';
+            ctx.strokeStyle = 'rgba(168, 85, 247, 0.4)';
             ctx.lineWidth = 1.5;
             ctx.stroke();
 
@@ -152,15 +147,16 @@ export default function RadarView({ coords, nearbyUsers, radius, onSelectUser, u
                 glowGrad.addColorStop(0, 'rgba(57, 255, 20, 0.3)');
                 glowGrad.addColorStop(1, 'transparent');
                 ctx.fillStyle = glowGrad;
-                ctx.fillRect(pos.x - 18, pos.y - 18, 36, 36);
-
                 // Dot
-                ctx.beginPath();
-                ctx.arc(pos.x, pos.y, 6, 0, Math.PI * 2);
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#4ade80';
                 ctx.fillStyle = unreadMessages[user.id]
                     ? '#ffa502'
-                    : '#39ff14';
+                    : '#4ade80';
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, 6, 0, Math.PI * 2);
                 ctx.fill();
+                ctx.shadowBlur = 0;
 
                 // Border
                 ctx.beginPath();
@@ -193,16 +189,11 @@ export default function RadarView({ coords, nearbyUsers, radius, onSelectUser, u
                 ctx.fillText(user.nickname, pos.x, pos.y + 20);
 
                 // Distance
-                ctx.fillStyle = 'rgba(0, 229, 255, 0.6)';
+                ctx.fillStyle = '#94a3b8';
                 ctx.font = '9px JetBrains Mono';
                 ctx.fillText(`${user.distance}м`, pos.x, pos.y + 32);
             });
 
-            // Center dot (current user)
-            const centerGlow = ctx.createRadialGradient(cx, cy, 0, cx, cy, 25);
-            centerGlow.addColorStop(0, 'rgba(0, 229, 255, 0.4)');
-            centerGlow.addColorStop(1, 'transparent');
-            ctx.fillStyle = centerGlow;
             ctx.fillRect(cx - 25, cy - 25, 50, 50);
 
             ctx.beginPath();
@@ -270,7 +261,7 @@ export default function RadarView({ coords, nearbyUsers, radius, onSelectUser, u
             {/* The Radar Circle Container */}
             <div
                 ref={containerRef}
-                className="w-full max-w-[360px] aspect-square rounded-full relative overflow-hidden border border-radar-accent/30 shadow-[0_0_30px_rgba(0,229,255,0.15)] bg-gradient-to-b from-radar-dark/80 to-radar-bg/90 backdrop-blur-md"
+                className="w-full max-w-[300px] aspect-square rounded-full relative overflow-hidden border border-radar-accent/20 shadow-[0_0_50px_rgba(168,85,247,0.2)] bg-gradient-to-br from-radar-dark/90 to-radar-bg"
             >
                 <canvas
                     ref={canvasRef}
@@ -283,9 +274,9 @@ export default function RadarView({ coords, nearbyUsers, radius, onSelectUser, u
             {/* Manual Refresh Button */}
             <button
                 onClick={onRefreshLocation}
-                className="mt-6 px-5 py-2 rounded-full bg-radar-dark/40 border border-radar-accent/20 text-radar-accent text-[10px] font-mono uppercase tracking-widest hover:bg-radar-accent/10 transition-all flex items-center gap-2 group"
+                className="mt-6 px-6 py-2.5 rounded-full bg-radar-dark/40 border border-radar-accent/20 text-radar-accent text-[10px] font-bold font-mono uppercase tracking-[0.2em] hover:bg-radar-accent/10 hover:border-radar-accent/40 shadow-lg shadow-radar-accent/5 transition-all flex items-center gap-2 group"
             >
-                <span className="group-hover:rotate-180 transition-transform duration-500">🛰️</span>
+                <span className="group-hover:rotate-180 transition-transform duration-700">🛰️</span>
                 Обновить GPS
             </button>
 
