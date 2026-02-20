@@ -14,7 +14,6 @@ export default function App() {
     const [user, setUser] = useState(null);
     const [locationGranted, setLocationGranted] = useState(false);
     const [coords, setCoords] = useState(null);
-    const [isDemoMode, setIsDemoMode] = useState(false);
     const [nearbyUsers, setNearbyUsers] = useState([]);
     const [selectedUser, setSelectedUser] = useState(null);
     const [showChat, setShowChat] = useState(false);
@@ -100,22 +99,9 @@ export default function App() {
     }, [user, showToast]);
 
     // Request geolocation
-    const requestLocation = useCallback((forceMock = false) => {
-        if (forceMock) {
-            // Default to a demo location (e.g. center of Tashkent/Moscow/etc)
-            setCoords({ lat: 41.311081, lng: 69.240562 });
-            setLocationGranted(true);
-            setIsDemoMode(true);
-            showToast('Используется тестовая локация', 'info');
-            return;
-        }
-
+    const requestLocation = useCallback(() => {
         if (!navigator.geolocation) {
-            if (window.isSecureContext === false) {
-                showToast('Внимание: Ваш браузер (Chrome) требует HTTPS для геолокации. Нажмите Demo', 'error');
-            } else {
-                showToast('Геолокация не поддерживается вашим браузером', 'error');
-            }
+            showToast('Геолокация не поддерживается вашим браузером', 'error');
             return;
         }
 
@@ -124,10 +110,8 @@ export default function App() {
                 const newCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
                 setCoords(newCoords);
                 setLocationGranted(true);
-                setIsDemoMode(false);
-                showToast('Геолокация определена', 'success');
+                showToast('Местоположение определено', 'success');
 
-                // Send to server immediately
                 if (socketRef.current) {
                     socketRef.current.emit('location', {
                         latitude: newCoords.lat,
@@ -138,41 +122,40 @@ export default function App() {
             },
             (err) => {
                 console.error('Geolocation error:', err);
-                let msg = 'Не удалось получить геолокацию. Включен Demo-режим.';
-                if (err.code === 1) msg = 'Доступ к локации запрещен. Включен Demo-режим.';
-                if (err.code === 2) msg = 'GPS недоступен. Включен Demo-режим.';
-                if (err.code === 3) msg = 'Тайм-аут получения локации. Включен Demo-режим.';
+                let msg = 'Не удалось получить геолокацию';
+                if (err.code === 1) msg = 'Доступ запрещен. Пожалуйста, разрешите GPS в настройках.';
+                if (err.code === 2) msg = 'GPS сигнал недоступен';
+                if (err.code === 3) msg = 'Тайм-аут: не удалось найти GPS';
                 showToast(msg, 'error');
-
-                // Auto fallback to demo mode so the app doesn't hang!
-                const demoCoords = { lat: 41.311081, lng: 69.240562 };
-                setCoords(demoCoords);
-                setLocationGranted(true);
-                setIsDemoMode(true);
-
-                if (socketRef.current) {
-                    socketRef.current.emit('location', {
-                        latitude: demoCoords.lat,
-                        longitude: demoCoords.lng,
-                        radius,
-                    });
-                }
             },
-            { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+            { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
         );
     }, [showToast, radius]);
 
-    // Location interval removed to prevent overheating
-    // Updates only happen on manual trigger or initial load
+    // Heartbeat: keeps user "online" on server without draining battery
+    // It sends the LAST KNOWN coordinates every 10 seconds (network only, no GPS hardware usage)
     useEffect(() => {
         if (!locationGranted || !socketRef.current || !coords) return;
 
-        // Initial send or send when radius changes
+        // Send immediately on change (initial or radius change)
         socketRef.current.emit('location', {
             latitude: coords.lat,
             longitude: coords.lng,
             radius,
         });
+
+        // Setup interval for heartbeat (keeping online status)
+        const interval = setInterval(() => {
+            if (socketRef.current && coords) {
+                socketRef.current.emit('location', {
+                    latitude: coords.lat,
+                    longitude: coords.lng,
+                    radius,
+                });
+            }
+        }, 10000);
+
+        return () => clearInterval(interval);
     }, [locationGranted, radius, coords]);
 
     // Handle profile update
@@ -232,8 +215,6 @@ export default function App() {
                 radius={radius}
                 onRadiusChange={setRadius}
                 nearbyCount={nearbyUsers.length}
-                isDemoMode={isDemoMode}
-                onRequestRealLocation={() => requestLocation(false)}
             />
 
             <main className="flex-1 relative overflow-hidden">

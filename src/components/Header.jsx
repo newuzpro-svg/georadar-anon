@@ -7,8 +7,6 @@ export default function Header({
     radius,
     onRadiusChange,
     nearbyCount,
-    onRequestRealLocation,
-    isDemoMode,
 }) {
     return (
         <header className="glass-strong relative z-40 px-4 py-3 flex items-center justify-between shrink-0">
@@ -57,16 +55,6 @@ export default function Header({
 
             {/* Right: Controls */}
             <div className="flex items-center gap-2">
-                {isDemoMode && (
-                    <button
-                        onClick={onRequestRealLocation}
-                        className="w-8 h-8 rounded-lg bg-radar-dark text-radar-danger hover:text-radar-green hover:bg-radar-green/10 border border-radar-danger/40 flex items-center justify-center transition-all animate-pulse"
-                        title="Включить реальный GPS"
-                    >
-                        <span className="text-sm">📍</span>
-                    </button>
-                )}
-
                 <button
                     onClick={onToggleInvisible}
                     className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${invisible

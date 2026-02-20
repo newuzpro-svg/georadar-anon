@@ -44,13 +44,6 @@ export default function LocationPermission({ onAllow }) {
                     >
                         📡 Разрешить геолокацию
                     </button>
-
-                    <button
-                        onClick={() => onAllow(true)}
-                        className="text-radar-muted hover:text-radar-accent text-xs font-mono transition-colors border-b border-transparent hover:border-radar-accent/30 py-1"
-                    >
-                        Использовать тестовую локацию (Demo)
-                    </button>
                 </div>
 
                 <div className="mt-8 flex items-center justify-center gap-6 text-xs text-radar-muted">
