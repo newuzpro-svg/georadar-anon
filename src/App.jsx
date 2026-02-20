@@ -41,6 +41,13 @@ export default function App() {
         setUser(u);
     }, []);
 
+    // Apply theme to document
+    useEffect(() => {
+        if (user?.theme) {
+            document.documentElement.setAttribute('data-theme', user.theme);
+        }
+    }, [user?.theme]);
+
     // Setup socket connection after user is set
     useEffect(() => {
         if (!user) return;

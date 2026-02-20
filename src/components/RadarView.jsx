@@ -62,19 +62,25 @@ export default function RadarView({ coords, nearbyUsers, radius, onSelectUser, u
         const cy = dimensions.height / 2;
         const maxRadius = Math.min(cx, cy) - 30;
 
+        const style = getComputedStyle(document.documentElement);
+        const accentColor = style.getPropertyValue('--radar-accent').trim() || '#a855f7';
+        const ringColor = style.getPropertyValue('--radar-ring').trim() || '#2d1b4d';
+        const accentRGB = style.getPropertyValue('--radar-accent-rgb').trim() || '168, 85, 247';
+        const mutedColor = style.getPropertyValue('--radar-muted').trim() || '#94a3b8';
+        const greenColor = style.getPropertyValue('--radar-green').trim() || '#4ade80';
+
         function draw() {
             ctx.clearRect(0, 0, dimensions.width, dimensions.height);
 
             // Background glow
             const bgGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, maxRadius * 1.2);
-            bgGrad.addColorStop(0, 'rgba(0, 229, 255, 0.03)');
-            bgGrad.addColorStop(0.5, 'rgba(0, 229, 255, 0.01)');
+            bgGrad.addColorStop(0, `rgba(${accentRGB}, 0.03)`);
             bgGrad.addColorStop(1, 'transparent');
             ctx.fillStyle = bgGrad;
             ctx.fillRect(0, 0, dimensions.width, dimensions.height);
 
             // Range rings
-            ctx.strokeStyle = '#2d1b4d';
+            ctx.strokeStyle = ringColor;
             ctx.lineWidth = 1;
             [0.25, 0.5, 0.75, 1].forEach((r) => {
                 ctx.beginPath();
@@ -83,8 +89,6 @@ export default function RadarView({ coords, nearbyUsers, radius, onSelectUser, u
             });
 
             // Crosshairs
-            ctx.strokeStyle = '#2d1b4d';
-            ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.moveTo(cx - maxRadius, cy);
             ctx.lineTo(cx + maxRadius, cy);
@@ -92,24 +96,14 @@ export default function RadarView({ coords, nearbyUsers, radius, onSelectUser, u
             ctx.lineTo(cx, cy + maxRadius);
             ctx.stroke();
 
-            // Diagonal crosshairs
-            const d = maxRadius * 0.707;
-            ctx.beginPath();
-            ctx.moveTo(cx - d, cy - d);
-            ctx.lineTo(cx + d, cy + d);
-            ctx.moveTo(cx + d, cy - d);
-            ctx.lineTo(cx - d, cy + d);
-            ctx.stroke();
-
             // Sweep line
             sweepAngleRef.current = (sweepAngleRef.current + 0.015) % (Math.PI * 2);
             const sweepAngle = sweepAngleRef.current;
 
-            // Sweep gradient (cone)
             const sweepGrad = ctx.createConicGradient(sweepAngle - 0.5, cx, cy);
             sweepGrad.addColorStop(0, 'transparent');
-            sweepGrad.addColorStop(0.12, 'rgba(168, 85, 247, 0.15)');
-            sweepGrad.addColorStop(0.15, 'rgba(168, 85, 247, 0.05)');
+            sweepGrad.addColorStop(0.12, `rgba(${accentRGB}, 0.15)`);
+            sweepGrad.addColorStop(0.15, `rgba(${accentRGB}, 0.05)`);
             sweepGrad.addColorStop(0.2, 'transparent');
             sweepGrad.addColorStop(1, 'transparent');
 
@@ -118,14 +112,10 @@ export default function RadarView({ coords, nearbyUsers, radius, onSelectUser, u
             ctx.fillStyle = sweepGrad;
             ctx.fill();
 
-            // Sweep line itself
             ctx.beginPath();
             ctx.moveTo(cx, cy);
-            ctx.lineTo(
-                cx + Math.cos(sweepAngle) * maxRadius,
-                cy + Math.sin(sweepAngle) * maxRadius
-            );
-            ctx.strokeStyle = 'rgba(168, 85, 247, 0.4)';
+            ctx.lineTo(cx + Math.cos(sweepAngle) * maxRadius, cy + Math.sin(sweepAngle) * maxRadius);
+            ctx.strokeStyle = `rgba(${accentRGB}, 0.4)`;
             ctx.lineWidth = 1.5;
             ctx.stroke();
 
@@ -134,7 +124,6 @@ export default function RadarView({ coords, nearbyUsers, radius, onSelectUser, u
                 const pos = userToCanvasPos(user, cx, cy, maxRadius);
                 if (!pos) return;
 
-                // Clamp within radar circle
                 const dist = Math.sqrt((pos.x - cx) ** 2 + (pos.y - cy) ** 2);
                 if (dist > maxRadius - 10) {
                     const angle = Math.atan2(pos.y - cy, pos.x - cx);
@@ -142,45 +131,14 @@ export default function RadarView({ coords, nearbyUsers, radius, onSelectUser, u
                     pos.y = cy + Math.sin(angle) * (maxRadius - 10);
                 }
 
-                // Glow
-                const glowGrad = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, 18);
-                glowGrad.addColorStop(0, 'rgba(57, 255, 20, 0.3)');
-                glowGrad.addColorStop(1, 'transparent');
-                ctx.fillStyle = glowGrad;
                 // Dot
                 ctx.shadowBlur = 10;
-                ctx.shadowColor = '#4ade80';
-                ctx.fillStyle = unreadMessages[user.id]
-                    ? '#ffa502'
-                    : '#4ade80';
+                ctx.shadowColor = greenColor;
+                ctx.fillStyle = unreadMessages[user.id] ? '#ffa502' : greenColor;
                 ctx.beginPath();
                 ctx.arc(pos.x, pos.y, 6, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.shadowBlur = 0;
-
-                // Border
-                ctx.beginPath();
-                ctx.arc(pos.x, pos.y, 7, 0, Math.PI * 2);
-                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-                ctx.lineWidth = 1;
-                ctx.stroke();
-
-                // Unread badge
-                if (unreadMessages[user.id]) {
-                    ctx.beginPath();
-                    ctx.arc(pos.x + 8, pos.y - 8, 6, 0, Math.PI * 2);
-                    ctx.fillStyle = '#ff4757';
-                    ctx.fill();
-                    ctx.fillStyle = '#fff';
-                    ctx.font = 'bold 8px Inter';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(
-                        unreadMessages[user.id] > 9 ? '9+' : String(unreadMessages[user.id]),
-                        pos.x + 8,
-                        pos.y - 8
-                    );
-                }
 
                 // Label
                 ctx.fillStyle = 'rgba(224, 232, 240, 0.8)';
@@ -189,25 +147,25 @@ export default function RadarView({ coords, nearbyUsers, radius, onSelectUser, u
                 ctx.fillText(user.nickname, pos.x, pos.y + 20);
 
                 // Distance
-                ctx.fillStyle = '#94a3b8';
+                ctx.fillStyle = mutedColor;
                 ctx.font = '9px JetBrains Mono';
                 ctx.fillText(`${user.distance}м`, pos.x, pos.y + 32);
             });
 
-            // Center dot (current user)
+            // Center dot
             ctx.beginPath();
             ctx.arc(cx, cy, 5, 0, Math.PI * 2);
-            ctx.fillStyle = '#a855f7';
+            ctx.fillStyle = accentColor;
             ctx.fill();
             ctx.beginPath();
             ctx.arc(cx, cy, 7, 0, Math.PI * 2);
-            ctx.strokeStyle = 'rgba(168, 85, 247, 0.5)';
+            ctx.strokeStyle = `rgba(${accentRGB}, 0.5)`;
             ctx.lineWidth = 1.5;
             ctx.stroke();
 
-            // Distance labels on rings
+            // Distance labels
             const rings = 4;
-            ctx.fillStyle = 'rgba(148, 163, 184, 0.5)';
+            ctx.fillStyle = mutedColor;
             ctx.font = '10px JetBrains Mono';
             ctx.textAlign = 'left';
             for (let i = 1; i <= rings; i++) {
@@ -220,11 +178,8 @@ export default function RadarView({ coords, nearbyUsers, radius, onSelectUser, u
         }
 
         draw();
-
         return () => {
-            if (animFrameRef.current) {
-                cancelAnimationFrame(animFrameRef.current);
-            }
+            if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
         };
     }, [dimensions, nearbyUsers, coords, radius, userToCanvasPos, unreadMessages]);
 

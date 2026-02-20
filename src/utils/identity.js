@@ -52,6 +52,7 @@ export function getOrCreateUser() {
         nickname: generateNickname(),
         gender: 'not_selected',
         photoUrl: '',
+        theme: 'violet',
         createdAt: Date.now(),
     };
 

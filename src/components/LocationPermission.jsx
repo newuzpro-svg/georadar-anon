@@ -40,7 +40,7 @@ export default function LocationPermission({ onAllow }) {
                     <button
                         id="allow-location-btn"
                         onClick={() => onAllow()}
-                        className="btn-glow w-full max-w-[280px] px-8 py-3.5 rounded-xl bg-gradient-to-r from-radar-accent to-purple-600 text-radar-bg font-bold text-base transition-all hover:scale-105 active:scale-95 shadow-lg shadow-radar-accent/25 uppercase tracking-wider font-mono"
+                        className="btn-glow w-full max-w-[280px] px-8 py-3.5 rounded-xl bg-gradient-to-r from-radar-accent to-radar-panel text-radar-bg font-bold text-base transition-all hover:scale-105 active:scale-95 shadow-lg shadow-radar-accent/25 uppercase tracking-wider font-mono"
                     >
                         📡 Разрешить доступ
                     </button>

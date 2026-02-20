@@ -223,7 +223,7 @@ export default function ChatPanel({ user, targetUser, socket, onClose, showToast
                     <button
                         onClick={sendMessage}
                         disabled={!input.trim()}
-                        className="w-10 h-10 rounded-xl bg-gradient-to-r from-radar-accent to-cyan-500 text-radar-bg flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-30 disabled:hover:scale-100 shrink-0"
+                        className="w-10 h-10 rounded-xl bg-gradient-to-r from-radar-accent to-radar-panel text-radar-bg flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-30 disabled:hover:scale-100 shrink-0"
                     >
                         <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
                             <path d="M2 21l21-9L2 3v7l15 2-15 2v7z" fill="currentColor" />
