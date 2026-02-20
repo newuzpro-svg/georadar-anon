@@ -11,10 +11,12 @@ export function getSocket() {
         console.log(`🔌 Connecting to socket server at: ${serverUrl}`);
 
         socket = io(serverUrl, {
-            transports: ['websocket', 'polling'],
+            transports: ['polling', 'websocket'], // Try polling first for faster initial handshake in some mobile browsers
             reconnection: true,
             reconnectionDelay: 1000,
-            reconnectionAttempts: 10,
+            reconnectionAttempts: 20,
+            rememberUpgrade: true,
+            timeout: 20000,
         });
 
         socket.on('connect', () => {

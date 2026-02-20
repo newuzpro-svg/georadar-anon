@@ -66,28 +66,22 @@ export function setupSocket(io) {
         // Location update
         socket.on('location', (data) => {
             if (!currentUserId && data.userId) {
-                // If userId is provided in location data and not yet registered, treat as registration
+                // Recover session if possible
                 const { userId, nickname, gender, photoUrl } = data;
                 currentUserId = userId;
-
-                const ban = bannedUsers.get(userId);
-                if (ban && ban > Date.now()) {
-                    socket.emit('banned', { until: ban });
-                    return;
-                }
 
                 const existing = db.prepare('SELECT id FROM users WHERE id = ?').get(userId);
                 if (existing) {
                     db.prepare(
-                        'UPDATE users SET nickname = ?, gender = ?, photo_url = ?, last_seen = ? WHERE id = ?'
-                    ).run(nickname || existing.nickname, gender || existing.gender || 'not_selected', photoUrl || existing.photo_url || '', Date.now(), userId);
+                        'UPDATE users SET last_seen = ? WHERE id = ?'
+                    ).run(Date.now(), userId);
                 } else {
+                    // Critical fallback if user records are lost or this is a first-time location-first hit
                     db.prepare(
                         'INSERT INTO users (id, nickname, gender, photo_url, last_seen, created_at) VALUES (?, ?, ?, ?, ?, ?)'
-                    ).run(userId, nickname || 'Anon', gender || 'not_selected', photoUrl || '', Date.now(), Date.now());
+                    ).run(userId, nickname || 'RadarExplorer', gender || 'not_selected', photoUrl || '', Date.now(), Date.now());
                 }
                 socket.join(`user:${userId}`);
-                socket.emit('registered', { success: true });
             }
             if (!currentUserId) return;
 

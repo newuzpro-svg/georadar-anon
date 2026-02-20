@@ -136,35 +136,54 @@ export default function App() {
         if (!locationGranted || !connected || !socketRef.current || !coords) return;
 
         const sendLocation = () => {
-            if (socketRef.current && socketRef.current.connected && coords) {
+            if (socketRef.current && socketRef.current.connected) {
                 socketRef.current.emit('location', {
                     userId: user.id,
-                    latitude: coords.lat,
-                    longitude: coords.lng,
-                    radius: radius,
+                    latitude: coordsRef.current?.lat || coords.lat,
+                    longitude: coordsRef.current?.lng || coords.lng,
+                    radius: radiusRef.current,
                 });
             }
         };
 
-        sendLocation(); // Immediate
         const interval = setInterval(sendLocation, 10000);
-        return () => clearInterval(interval);
-    }, [locationGranted, connected, radius, coords, user?.id]);
+
+        // Browser focus recovery: Some browsers (Yandex/MIUI) aggressive throttle in background
+        const handleFocus = () => {
+            if (socketRef.current && !socketRef.current.connected) {
+                socketRef.current.connect();
+            }
+            sendLocation();
+        };
+        window.addEventListener('focus', handleFocus);
+
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener('focus', handleFocus);
+        };
+    }, [locationGranted, connected, coords, user?.id]);
 
     // Request geolocation
     const requestLocation = useCallback((isInitial = true) => {
-        // Fallback default coordinates
+        // Fallback default coordinates (Tashkent center)
         const defaultCoords = { lat: 41.311081, lng: 69.240562 };
 
-        if (isInitial) {
+        if (isInitial && !coords) {
             setCoords(defaultCoords);
             setLocationGranted(true);
         }
 
         if (!navigator.geolocation) {
-            if (isInitial) showToast('GPS qo‘llab-quvvatlanmaydi, standart lokatsiya o‘rnatildi', 'warning');
+            if (isInitial) showToast('GPS qo‘llab-quvvatlanmaydi', 'warning');
             return;
         }
+
+        // Use more tolerant settings for mobile browsers (Yandex, MIUI, etc.)
+        const geoOptions = {
+            enableHighAccuracy: !isInitial, // High accuracy only for manual refreshes
+            timeout: 20000,
+            maximumAge: 60000 // Allow 1 minute old cached position for speed
+        };
 
         navigator.geolocation.getCurrentPosition(
             (pos) => {
@@ -177,17 +196,24 @@ export default function App() {
                         userId: user.id,
                         latitude: newCoords.lat,
                         longitude: newCoords.lng,
-                        radius,
+                        radius: radiusRef.current,
                     });
                 }
             },
             (err) => {
-                console.error('GPS error:', err);
-                if (!isInitial) showToast('GPS xatoligi: ' + err.message, 'error');
+                console.warn('GPS error:', err.code, err.message);
+                // If high accuracy failed, try low accuracy as fallback
+                if (geoOptions.enableHighAccuracy) {
+                    navigator.geolocation.getCurrentPosition(
+                        (p) => setCoords({ lat: p.coords.latitude, lng: p.coords.longitude }),
+                        null,
+                        { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
+                    );
+                }
             },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            geoOptions
         );
-    }, [showToast, radius, user?.id]);
+    }, [showToast, user?.id, coords]);
 
     // Handle profile update
     const handleProfileUpdate = useCallback((updates) => {
