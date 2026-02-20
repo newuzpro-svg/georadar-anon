@@ -5,9 +5,8 @@ let socket = null;
 export function getSocket() {
     if (!socket) {
         // Determine the server URL:
-        // 1. Check if environment variable is set (Vite uses VITE_ prefix)
-        // 2. Fallback to current origin (works during local dev with proxy)
-        const serverUrl = import.meta.env.VITE_SERVER_URL || window.location.origin;
+        // Use the Render backend directly so no Netlify env vars are needed
+        const serverUrl = 'https://georadar-anon.onrender.com';
 
         console.log(`🔌 Connecting to socket server at: ${serverUrl}`);
 
