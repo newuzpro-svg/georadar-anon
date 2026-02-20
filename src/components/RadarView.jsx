@@ -100,17 +100,27 @@ export default function RadarView({ coords, nearbyUsers, radius, onSelectUser, u
             sweepAngleRef.current = (sweepAngleRef.current + 0.015) % (Math.PI * 2);
             const sweepAngle = sweepAngleRef.current;
 
-            const sweepGrad = ctx.createConicGradient(sweepAngle - 0.5, cx, cy);
-            sweepGrad.addColorStop(0, 'transparent');
-            sweepGrad.addColorStop(0.12, `rgba(${accentRGB}, 0.15)`);
-            sweepGrad.addColorStop(0.15, `rgba(${accentRGB}, 0.05)`);
-            sweepGrad.addColorStop(0.2, 'transparent');
-            sweepGrad.addColorStop(1, 'transparent');
+            if (ctx.createConicGradient) {
+                const sweepGrad = ctx.createConicGradient(sweepAngle - 0.5, cx, cy);
+                sweepGrad.addColorStop(0, 'transparent');
+                sweepGrad.addColorStop(0.12, `rgba(${accentRGB}, 0.15)`);
+                sweepGrad.addColorStop(0.15, `rgba(${accentRGB}, 0.05)`);
+                sweepGrad.addColorStop(0.2, 'transparent');
+                sweepGrad.addColorStop(1, 'transparent');
 
-            ctx.beginPath();
-            ctx.arc(cx, cy, maxRadius, 0, Math.PI * 2);
-            ctx.fillStyle = sweepGrad;
-            ctx.fill();
+                ctx.beginPath();
+                ctx.arc(cx, cy, maxRadius, 0, Math.PI * 2);
+                ctx.fillStyle = sweepGrad;
+                ctx.fill();
+            } else {
+                // Fallback for older Safari/Chrome version without createConicGradient
+                // Draw a simpler faded sector or just skip fill
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.arc(cx, cy, maxRadius, sweepAngle - 0.5, sweepAngle);
+                ctx.fillStyle = `rgba(${accentRGB}, 0.1)`;
+                ctx.fill();
+            }
 
             ctx.beginPath();
             ctx.moveTo(cx, cy);
