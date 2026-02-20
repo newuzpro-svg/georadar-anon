@@ -266,13 +266,19 @@ export default function RadarView({ coords, nearbyUsers, radius, onSelectUser, u
     );
 
     return (
-        <div ref={containerRef} className="w-full h-full relative">
-            <canvas
-                ref={canvasRef}
-                className="w-full h-full cursor-pointer"
-                onClick={handleClick}
-                style={{ width: dimensions.width, height: dimensions.height }}
-            />
+        <div className="w-full h-full relative flex flex-col items-center justify-center p-4">
+            {/* The Radar Circle Container */}
+            <div
+                ref={containerRef}
+                className="w-full max-w-[360px] aspect-square rounded-full relative overflow-hidden border border-radar-accent/30 shadow-[0_0_30px_rgba(0,229,255,0.15)] bg-gradient-to-b from-radar-dark/80 to-radar-bg/90 backdrop-blur-md"
+            >
+                <canvas
+                    ref={canvasRef}
+                    className="w-full h-full cursor-pointer absolute inset-0"
+                    onClick={handleClick}
+                    style={{ width: dimensions.width, height: dimensions.height }}
+                />
+            </div>
 
             {/* Nearby users list (bottom) */}
             {nearbyUsers.length > 0 && (

@@ -14,6 +14,7 @@ export default function App() {
     const [user, setUser] = useState(null);
     const [locationGranted, setLocationGranted] = useState(false);
     const [coords, setCoords] = useState(null);
+    const [isDemoMode, setIsDemoMode] = useState(false);
     const [nearbyUsers, setNearbyUsers] = useState([]);
     const [selectedUser, setSelectedUser] = useState(null);
     const [showChat, setShowChat] = useState(false);
@@ -104,12 +105,17 @@ export default function App() {
             // Default to a demo location (e.g. center of Tashkent/Moscow/etc)
             setCoords({ lat: 41.311081, lng: 69.240562 });
             setLocationGranted(true);
+            setIsDemoMode(true);
             showToast('Используется тестовая локация', 'info');
             return;
         }
 
         if (!navigator.geolocation) {
-            showToast('Геолокация не поддерживается', 'error');
+            if (window.isSecureContext === false) {
+                showToast('Внимание: Ваш браузер (Chrome) требует HTTPS для геолокации. Нажмите Demo', 'error');
+            } else {
+                showToast('Геолокация не поддерживается вашим браузером', 'error');
+            }
             return;
         }
 
@@ -117,6 +123,8 @@ export default function App() {
             (pos) => {
                 setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
                 setLocationGranted(true);
+                setIsDemoMode(false);
+                showToast('Геолокация подключена', 'success');
             },
             (err) => {
                 console.error('Geolocation error:', err);
@@ -230,6 +238,8 @@ export default function App() {
                 radius={radius}
                 onRadiusChange={setRadius}
                 nearbyCount={nearbyUsers.length}
+                isDemoMode={isDemoMode}
+                onRequestRealLocation={() => requestLocation(false)}
             />
 
             <main className="flex-1 relative overflow-hidden">
