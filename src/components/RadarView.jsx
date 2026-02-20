@@ -194,20 +194,20 @@ export default function RadarView({ coords, nearbyUsers, radius, onSelectUser, u
                 ctx.fillText(`${user.distance}м`, pos.x, pos.y + 32);
             });
 
-            ctx.fillRect(cx - 25, cy - 25, 50, 50);
-
+            // Center dot (current user)
             ctx.beginPath();
             ctx.arc(cx, cy, 5, 0, Math.PI * 2);
-            ctx.fillStyle = '#00e5ff';
+            ctx.fillStyle = '#a855f7';
             ctx.fill();
             ctx.beginPath();
             ctx.arc(cx, cy, 7, 0, Math.PI * 2);
-            ctx.strokeStyle = 'rgba(0, 229, 255, 0.5)';
+            ctx.strokeStyle = 'rgba(168, 85, 247, 0.5)';
             ctx.lineWidth = 1.5;
             ctx.stroke();
 
             // Distance labels on rings
-            ctx.fillStyle = 'rgba(122, 139, 160, 0.5)';
+            const rings = 4;
+            ctx.fillStyle = 'rgba(148, 163, 184, 0.5)';
             ctx.font = '10px JetBrains Mono';
             ctx.textAlign = 'left';
             for (let i = 1; i <= rings; i++) {
