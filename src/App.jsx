@@ -128,16 +128,18 @@ export default function App() {
             },
             (err) => {
                 console.error('Geolocation error:', err);
-                let msg = 'Не удалось получить геолокацию';
-                if (err.code === 1) msg = 'Доступ к локации запрещен. Пожалуйста, разрешите в настройках браузера.';
-                if (err.code === 2) msg = 'Невозможно определить местоположение (GPS отключен или недоступен).';
-                if (err.code === 3) msg = 'Тайм-аут: браузер слишком долго искал вас. Попробуйте обновить страницу.';
+                let msg = 'Не удалось получить геолокацию. Включен Demo-режим.';
+                if (err.code === 1) msg = 'Доступ к локации запрещен. Включен Demo-режим.';
+                if (err.code === 2) msg = 'GPS недоступен. Включен Demo-режим.';
+                if (err.code === 3) msg = 'Тайм-аут получения локации. Включен Demo-режим.';
                 showToast(msg, 'error');
 
-                // If it fails on desktop/chrome, let them enter Demo mode automatically
-                // Or just keep them on the screen. Let's keep them on the screen so they know it failed.
+                // Auto fallback to demo mode so the app doesn't hang!
+                setCoords({ lat: 41.311081, lng: 69.240562 });
+                setLocationGranted(true);
+                setIsDemoMode(true);
             },
-            { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 } // Fix for Chrome: Lower initial accuracy requirement and higher timeout
+            { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
         );
     }, [showToast]);
 
