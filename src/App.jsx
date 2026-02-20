@@ -48,15 +48,16 @@ export default function App() {
         const socket = getSocket();
         socketRef.current = socket;
 
-        socket.on('connect', () => setConnected(true));
-        socket.on('disconnect', () => setConnected(false));
-
-        socket.emit('register', {
-            userId: user.id,
-            nickname: user.nickname,
-            gender: user.gender,
-            photoUrl: user.photoUrl,
+        socket.on('connect', () => {
+            setConnected(true);
+            socket.emit('register', {
+                userId: user.id,
+                nickname: user.nickname,
+                gender: user.gender,
+                photoUrl: user.photoUrl,
+            });
         });
+        socket.on('disconnect', () => setConnected(false));
 
         socket.on('registered', () => {
             console.log('✅ Registered');

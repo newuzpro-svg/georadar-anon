@@ -15,10 +15,15 @@ export default function ChatPanel({ user, targetUser, socket, onClose, showToast
 
         socket.emit('getMessages', { otherUserId: targetUser.id });
 
+        const historyTimeout = setTimeout(() => {
+            setLoading(false);
+        }, 5000);
+
         const handleHistory = (data) => {
             if (data.otherUserId === targetUser.id) {
                 setMessages(data.messages);
                 setLoading(false);
+                clearTimeout(historyTimeout);
             }
         };
 
@@ -41,6 +46,7 @@ export default function ChatPanel({ user, targetUser, socket, onClose, showToast
         return () => {
             socket.off('messageHistory', handleHistory);
             socket.off('newMessage', handleNewMessage);
+            clearTimeout(historyTimeout);
         };
     }, [socket, targetUser, user.id]);
 

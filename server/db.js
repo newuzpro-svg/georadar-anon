@@ -1,6 +1,7 @@
 // In-memory storage for MVP to avoid native compilation issues with SQLite
 export const users = new Map();
-export const messages = [];
+export const messages = []; // Keep for backwards compatibility/cleanup if needed
+export const conversations = new Map(); // key: sorted "uid1_uid2", value: messages array
 
 export function initDB() {
     console.log('📦 In-memory storage initialized');
@@ -79,8 +80,15 @@ export const db = {
         if (query.includes('INSERT INTO messages')) {
             return {
                 run: (sender_id, receiver_id, message, created_at) => {
-                    const id = messages.length + 1;
-                    messages.push({ id, sender_id, receiver_id, message, created_at });
+                    const id = Date.now() + Math.random();
+                    const msg = { id, sender_id, receiver_id, message, created_at };
+                    messages.push(msg); // sync with legacy array
+
+                    // Add to conversation map
+                    const key = [sender_id, receiver_id].sort().join('_');
+                    if (!conversations.has(key)) conversations.set(key, []);
+                    conversations.get(key).push(msg);
+
                     return { lastInsertRowid: id };
                 }
             };
@@ -90,10 +98,11 @@ export const db = {
         }
         if (query.includes('FROM messages') && query.includes('ORDER BY created_at')) {
             return {
-                all: (cutoff, uid1, uid2, uid2_alt, uid1_alt) => {
-                    return messages
-                        .filter(m => m.created_at > cutoff &&
-                            ((m.sender_id === uid1 && m.receiver_id === uid2) || (m.sender_id === uid2 && m.receiver_id === uid1)))
+                all: (cutoff, uid1, uid2) => {
+                    const key = [uid1, uid2].sort().join('_');
+                    const history = conversations.get(key) || [];
+                    return history
+                        .filter(m => m.created_at > cutoff)
                         .map(m => ({ id: m.id, senderId: m.sender_id, receiverId: m.receiver_id, message: m.message, createdAt: m.created_at }));
                 }
             };
