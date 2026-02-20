@@ -13,12 +13,13 @@ const io = new Server(httpServer, {
         origin: '*',
         methods: ['GET', 'POST'],
     },
+    transports: ['polling', 'websocket'],
+    allowEIO3: true, // Compatibility with older Socket.IO clients
 });
 
 app.use(cors({
-    origin: '*', // In production, replace with your actual Netlify URL e.g. 'https://georadar-anon.netlify.app'
-    methods: ['GET', 'POST'],
-    credentials: true
+    origin: '*',
+    methods: ['GET', 'POST', 'OPTIONS'],
 }));
 app.use(express.json());
 

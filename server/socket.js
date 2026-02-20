@@ -21,6 +21,7 @@ function filterMessage(text) {
 export function setupSocket(io) {
     io.on('connection', (socket) => {
         let currentUserId = null;
+        console.log(`🔌 NEW CONNECTION: ${socket.id} (transport: ${socket.conn.transport.name})`);
 
         // Register / reconnect user
         socket.on('register', (data) => {
@@ -113,8 +114,9 @@ export function setupSocket(io) {
                 radius || 100
             );
 
-            // Detailed logging (optional: can be noisy but good for debug)
-            // console.log(`📍 LOCATION: [${currentUserId}] at ${latitude},${longitude} (Scan: ${radius}m, Found: ${nearbyUsers.length})`);
+            // Debug logging (enabled temporarily for diagnosis)
+            console.log(`📍 LOCATION: [${currentUserId?.substring(0, 8)}] at ${latitude?.toFixed(4)},${longitude?.toFixed(4)} (r:${radius}m found:${nearbyUsers.length})`);
+
 
             socket.emit('nearby', nearbyUsers);
         });

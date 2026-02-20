@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { db } from './db.js';
+import { db, users } from './db.js';
 
 export const apiRoutes = Router();
 
@@ -19,4 +19,19 @@ apiRoutes.get('/user/:id', (req, res) => {
 // Health check
 apiRoutes.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: Date.now() });
+});
+
+// Debug: show all users in memory
+apiRoutes.get('/debug/users', (req, res) => {
+    const now = Date.now();
+    const allUsers = Array.from(users.values()).map(u => ({
+        id: u.id?.substring(0, 8) + '...',
+        nickname: u.nickname,
+        lat: u.latitude,
+        lon: u.longitude,
+        invisible: u.is_invisible,
+        lastSeen: u.last_seen ? Math.round((now - u.last_seen) / 1000) + 's ago' : 'never',
+        hasCoords: u.latitude !== null && u.latitude !== undefined
+    }));
+    res.json({ count: allUsers.length, users: allUsers });
 });
