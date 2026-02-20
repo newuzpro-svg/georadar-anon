@@ -121,10 +121,20 @@ export default function App() {
 
         navigator.geolocation.getCurrentPosition(
             (pos) => {
-                setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+                const newCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                setCoords(newCoords);
                 setLocationGranted(true);
                 setIsDemoMode(false);
-                showToast('Геолокация подключена', 'success');
+                showToast('Геолокация определена', 'success');
+
+                // Send to server immediately
+                if (socketRef.current) {
+                    socketRef.current.emit('location', {
+                        latitude: newCoords.lat,
+                        longitude: newCoords.lng,
+                        radius,
+                    });
+                }
             },
             (err) => {
                 console.error('Geolocation error:', err);
@@ -135,57 +145,35 @@ export default function App() {
                 showToast(msg, 'error');
 
                 // Auto fallback to demo mode so the app doesn't hang!
-                setCoords({ lat: 41.311081, lng: 69.240562 });
+                const demoCoords = { lat: 41.311081, lng: 69.240562 };
+                setCoords(demoCoords);
                 setLocationGranted(true);
                 setIsDemoMode(true);
+
+                if (socketRef.current) {
+                    socketRef.current.emit('location', {
+                        latitude: demoCoords.lat,
+                        longitude: demoCoords.lng,
+                        radius,
+                    });
+                }
             },
             { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
         );
-    }, [showToast]);
+    }, [showToast, radius]);
 
-    // Continuous location updates after permission granted
+    // Location interval removed to prevent overheating
+    // Updates only happen on manual trigger or initial load
     useEffect(() => {
-        if (!locationGranted || !socketRef.current) return;
+        if (!locationGranted || !socketRef.current || !coords) return;
 
-        // Watch position
-        watchIdRef.current = navigator.geolocation.watchPosition(
-            (pos) => {
-                const newCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-                setCoords(newCoords);
-            },
-            (err) => console.error('Watch error:', err),
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
-        );
-
-        // Send location to server every 5 seconds
-        locationIntervalRef.current = setInterval(() => {
-            if (socketRef.current && coords) {
-                socketRef.current.emit('location', {
-                    latitude: coords.lat,
-                    longitude: coords.lng,
-                    radius,
-                });
-            }
-        }, 5000);
-
-        // Initial send
-        if (coords) {
-            socketRef.current.emit('location', {
-                latitude: coords.lat,
-                longitude: coords.lng,
-                radius,
-            });
-        }
-
-        return () => {
-            if (watchIdRef.current !== null) {
-                navigator.geolocation.clearWatch(watchIdRef.current);
-            }
-            if (locationIntervalRef.current) {
-                clearInterval(locationIntervalRef.current);
-            }
-        };
-    }, [locationGranted, coords, radius]);
+        // Initial send or send when radius changes
+        socketRef.current.emit('location', {
+            latitude: coords.lat,
+            longitude: coords.lng,
+            radius,
+        });
+    }, [locationGranted, radius, coords]);
 
     // Handle profile update
     const handleProfileUpdate = useCallback((updates) => {
@@ -255,6 +243,7 @@ export default function App() {
                     radius={radius}
                     onSelectUser={handleOpenChat}
                     unreadMessages={unreadMessages}
+                    onRefreshLocation={() => requestLocation(false)}
                 />
 
                 {/* Chat Panel */}

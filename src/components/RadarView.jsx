@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { generateAvatar } from '../utils/avatars.js';
 
-export default function RadarView({ coords, nearbyUsers, radius, onSelectUser, unreadMessages }) {
+export default function RadarView({ coords, nearbyUsers, radius, onSelectUser, unreadMessages, onRefreshLocation }) {
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
     const sweepAngleRef = useRef(0);
@@ -279,6 +279,15 @@ export default function RadarView({ coords, nearbyUsers, radius, onSelectUser, u
                     style={{ width: dimensions.width, height: dimensions.height }}
                 />
             </div>
+
+            {/* Manual Refresh Button */}
+            <button
+                onClick={onRefreshLocation}
+                className="mt-6 px-5 py-2 rounded-full bg-radar-dark/40 border border-radar-accent/20 text-radar-accent text-[10px] font-mono uppercase tracking-widest hover:bg-radar-accent/10 transition-all flex items-center gap-2 group"
+            >
+                <span className="group-hover:rotate-180 transition-transform duration-500">🛰️</span>
+                Обновить GPS
+            </button>
 
             {/* Nearby users list (bottom) */}
             {nearbyUsers.length > 0 && (

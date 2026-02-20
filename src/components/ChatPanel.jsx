@@ -97,7 +97,7 @@ export default function ChatPanel({ user, targetUser, socket, onClose, showToast
     };
 
     return (
-        <div className="absolute inset-0 z-40 flex flex-col glass-strong animate-slide-up">
+        <div className="fixed inset-0 z-[100] flex flex-col glass-strong animate-slide-up h-[100dvh] w-full bg-radar-bg">
             {/* Chat header */}
             <div className="flex items-center gap-3 px-4 py-3 border-b border-radar-ring/50 shrink-0">
                 <button
