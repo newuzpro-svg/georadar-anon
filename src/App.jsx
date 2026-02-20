@@ -10,6 +10,8 @@ import BannedScreen from './components/BannedScreen.jsx';
 import Toast from './components/Toast.jsx';
 import { playNotificationSound } from './utils/sound.js';
 
+import AdminPanel from './components/AdminPanel.jsx';
+
 export default function App() {
     const [user, setUser] = useState(null);
     const [locationGranted, setLocationGranted] = useState(false);
@@ -18,6 +20,7 @@ export default function App() {
     const [selectedUser, setSelectedUser] = useState(null);
     const [showChat, setShowChat] = useState(false);
     const [showProfile, setShowProfile] = useState(false);
+    const [showAdmin, setShowAdmin] = useState(false);
     const [connected, setConnected] = useState(false);
     const [banned, setBanned] = useState(null);
     const [toast, setToast] = useState(null);
@@ -39,6 +42,11 @@ export default function App() {
     useEffect(() => {
         const u = getOrCreateUser();
         setUser(u);
+
+        // Secret Admin Access via URL param: ?adm=1
+        if (window.location.search.includes('adm=1')) {
+            setShowAdmin(true);
+        }
     }, []);
 
     // Apply theme to document
@@ -212,6 +220,12 @@ export default function App() {
 
     return (
         <div className="h-full w-full flex flex-col bg-radar-bg overflow-hidden relative">
+            {showAdmin && (
+                <AdminPanel
+                    socket={socketRef.current}
+                    onClose={() => setShowAdmin(false)}
+                />
+            )}
             {/* Scan line effect */}
             <div className="scan-line pointer-events-none z-50 opacity-30" />
 

@@ -217,6 +217,44 @@ export function setupSocket(io) {
             socket.emit('reportSent', { success: true });
         });
 
+        // Admin login
+        socket.on('adminAuth', (data) => {
+            if (data.pin === '2061') {
+                socket.isAdmin = true;
+                socket.emit('adminAuthSuccess');
+                console.log('💎 ADMIN LOGGED IN');
+            } else {
+                socket.emit('error', { message: 'Xato kod!' });
+            }
+        });
+
+        socket.on('adminGetUsers', () => {
+            if (!socket.isAdmin) return;
+            const users = db.prepare('SELECT id, nickname, gender, last_seen, is_invisible FROM users ORDER BY last_seen DESC LIMIT 100').all();
+            socket.emit('adminUserList', users);
+        });
+
+        socket.on('adminBanUser', (data) => {
+            if (!socket.isAdmin) return;
+            const { userId, minutes } = data;
+            const expiry = Date.now() + minutes * 60 * 1000;
+            bannedUsers.set(userId, expiry);
+            io.to(`user:${userId}`).emit('banned', { until: expiry, reason: 'Admin tomonidan cheklandi' });
+            console.log(`🚫 BANNED: ${userId} for ${minutes} min`);
+        });
+
+        socket.on('adminBroadcast', (data) => {
+            if (!socket.isAdmin) return;
+            io.emit('newMessage', {
+                id: Date.now(),
+                senderId: 'SYSTEM',
+                nickname: 'ADMIN 📢',
+                message: data.message,
+                createdAt: Date.now(),
+                isBroadcast: true
+            });
+        });
+
         // Disconnect
         socket.on('disconnect', () => {
             if (currentUserId) {
