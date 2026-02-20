@@ -101,17 +101,22 @@ export default function App() {
 
     // Request geolocation
     const requestLocation = useCallback(() => {
+        // 1. Immediately "open" the app with a default location to prevent sticking
+        const defaultCoords = { lat: 41.311081, lng: 69.240562 };
+        setCoords(defaultCoords);
+        setLocationGranted(true);
+
         if (!navigator.geolocation) {
-            showToast('Геолокация не поддерживается вашим браузером', 'error');
+            showToast('GPS qo‘llab-quvvatlanmaydi, standart lokatsiya o‘rnatildi', 'warning');
             return;
         }
 
+        // 2. Try to get real GPS in the background
         navigator.geolocation.getCurrentPosition(
             (pos) => {
                 const newCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
                 setCoords(newCoords);
-                setLocationGranted(true);
-                showToast('Местоположение определено', 'success');
+                showToast('Haqiqiy lokatsiya aniqlandi', 'success');
 
                 if (socketRef.current) {
                     socketRef.current.emit('location', {
@@ -122,26 +127,10 @@ export default function App() {
                 }
             },
             (err) => {
-                console.error('Geolocation error:', err);
-                let msg = 'GPS aniqlanmadi, standart lokatsiya o‘rnatildi';
-                if (err.code === 1) msg = 'Ruxsat berilmadi, standart lokatsiya o‘rnatildi';
-
-                showToast(msg, 'warning');
-
-                // Fallback to a default location so the user is NEVER STUCK
-                const defaultCoords = { lat: 41.311081, lng: 69.240562 };
-                setCoords(defaultCoords);
-                setLocationGranted(true);
-
-                if (socketRef.current) {
-                    socketRef.current.emit('location', {
-                        latitude: defaultCoords.lat,
-                        longitude: defaultCoords.lng,
-                        radius,
-                    });
-                }
+                console.error('GPS Background error:', err);
+                // No need to show error because we already have default coords
             },
-            { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+            { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
         );
     }, [showToast, radius]);
 
