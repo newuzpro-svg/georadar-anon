@@ -54,8 +54,8 @@ export function setupSocket(io) {
 
             const { latitude, longitude, radius } = data;
 
-            // Speed check
-            const speedResult = checkSpeed(currentUserId, latitude, longitude);
+            // Speed check temporarily disabled to prevent false positive bans
+            /*const speedResult = checkSpeed(currentUserId, latitude, longitude);
             if (speedResult.suspicious) {
                 // Ban for 5 minutes
                 bannedUsers.set(currentUserId, Date.now() + 5 * 60 * 1000);
@@ -65,7 +65,7 @@ export function setupSocket(io) {
                     until: Date.now() + 5 * 60 * 1000,
                 });
                 return;
-            }
+            }*/
 
             // Update location
             db.prepare(
