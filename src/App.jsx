@@ -29,8 +29,12 @@ export default function App() {
     const [unreadMessages, setUnreadMessages] = useState({});
 
     const socketRef = useRef(null);
-    const watchIdRef = useRef(null);
-    const locationIntervalRef = useRef(null);
+    const coordsRef = useRef(null);
+    const radiusRef = useRef(100);
+
+    // Sync refs for use in socket handlers without re-subscribing
+    useEffect(() => { coordsRef.current = coords; }, [coords]);
+    useEffect(() => { radiusRef.current = radius; }, [radius]);
 
     // Show toast helper
     const showToast = useCallback((message, type = 'info') => {
@@ -56,85 +60,121 @@ export default function App() {
         }
     }, [user?.theme]);
 
-    // Setup socket connection after user is set
+    // Setup socket connection
     useEffect(() => {
         if (!user) return;
 
         const socket = getSocket();
         socketRef.current = socket;
 
-        socket.on('connect', () => {
+        const onConnect = () => {
             setConnected(true);
             socket.emit('register', {
                 userId: user.id,
                 nickname: user.nickname,
                 gender: user.gender,
                 photoUrl: user.photoUrl,
+                latitude: coordsRef.current?.lat,
+                longitude: coordsRef.current?.lng,
             });
-        });
-        socket.on('disconnect', () => setConnected(false));
+        };
 
-        socket.on('registered', () => {
+        const onDisconnect = () => setConnected(false);
+
+        const onRegistered = () => {
             console.log('✅ Registered');
-        });
+            // Send location immediately upon registration if we have it
+            if (coordsRef.current) {
+                socket.emit('location', {
+                    userId: user.id,
+                    latitude: coordsRef.current.lat,
+                    longitude: coordsRef.current.lng,
+                    radius: radiusRef.current,
+                });
+            }
+        };
 
-        socket.on('nearby', (users) => {
-            setNearbyUsers(users);
-        });
+        const onNearby = (users) => setNearbyUsers(users);
 
-        socket.on('newMessage', (msg) => {
-            // Play sound if another user sent it
+        const onNewMessage = (msg) => {
             if (user && msg.senderId !== user.id) {
                 playNotificationSound();
             }
-
-            // If chat is not open with this sender, mark as unread
             setUnreadMessages((prev) => {
                 const senderId = msg.senderId === user.id ? msg.receiverId : msg.senderId;
                 return { ...prev, [senderId]: (prev[senderId] || 0) + 1 };
             });
-        });
+        };
 
-        socket.on('banned', (data) => {
-            setBanned(data);
-        });
+        const onBanned = (data) => setBanned(data);
+        const onError = (data) => showToast(data.message, 'error');
 
-        socket.on('error', (data) => {
-            showToast(data.message, 'error');
-        });
+        socket.on('connect', onConnect);
+        socket.on('disconnect', onDisconnect);
+        socket.on('registered', onRegistered);
+        socket.on('nearby', onNearby);
+        socket.on('newMessage', onNewMessage);
+        socket.on('banned', onBanned);
+        socket.on('error', onError);
+
+        // If already connected, trigger registration manually
+        if (socket.connected) onConnect();
 
         return () => {
-            socket.off('connect');
-            socket.off('disconnect');
-            socket.off('registered');
-            socket.off('nearby');
-            socket.off('newMessage');
-            socket.off('banned');
-            socket.off('error');
+            socket.off('connect', onConnect);
+            socket.off('disconnect', onDisconnect);
+            socket.off('registered', onRegistered);
+            socket.off('nearby', onNearby);
+            socket.off('newMessage', onNewMessage);
+            socket.off('banned', onBanned);
+            socket.off('error', onError);
         };
     }, [user, showToast]);
 
+    // Heartbeat: keeps user "online"
+    useEffect(() => {
+        if (!locationGranted || !connected || !socketRef.current || !coords) return;
+
+        const sendLocation = () => {
+            if (socketRef.current && socketRef.current.connected && coords) {
+                socketRef.current.emit('location', {
+                    userId: user.id,
+                    latitude: coords.lat,
+                    longitude: coords.lng,
+                    radius: radius,
+                });
+            }
+        };
+
+        sendLocation(); // Immediate
+        const interval = setInterval(sendLocation, 10000);
+        return () => clearInterval(interval);
+    }, [locationGranted, connected, radius, coords, user?.id]);
+
     // Request geolocation
-    const requestLocation = useCallback(() => {
-        // 1. Immediately "open" the app with a default location to prevent sticking
+    const requestLocation = useCallback((isInitial = true) => {
+        // Fallback default coordinates
         const defaultCoords = { lat: 41.311081, lng: 69.240562 };
-        setCoords(defaultCoords);
-        setLocationGranted(true);
+
+        if (isInitial) {
+            setCoords(defaultCoords);
+            setLocationGranted(true);
+        }
 
         if (!navigator.geolocation) {
-            showToast('GPS qo‘llab-quvvatlanmaydi, standart lokatsiya o‘rnatildi', 'warning');
+            if (isInitial) showToast('GPS qo‘llab-quvvatlanmaydi, standart lokatsiya o‘rnatildi', 'warning');
             return;
         }
 
-        // 2. Try to get real GPS in the background
         navigator.geolocation.getCurrentPosition(
             (pos) => {
                 const newCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
                 setCoords(newCoords);
-                showToast('Haqiqiy lokatsiya aniqlandi', 'success');
+                if (!isInitial) showToast('Lokatsiya yangilandi', 'success');
 
-                if (socketRef.current) {
+                if (socketRef.current && socketRef.current.connected) {
                     socketRef.current.emit('location', {
+                        userId: user.id,
                         latitude: newCoords.lat,
                         longitude: newCoords.lng,
                         radius,
@@ -142,38 +182,12 @@ export default function App() {
                 }
             },
             (err) => {
-                console.error('GPS Background error:', err);
-                // No need to show error because we already have default coords
+                console.error('GPS error:', err);
+                if (!isInitial) showToast('GPS xatoligi: ' + err.message, 'error');
             },
-            { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
-    }, [showToast, radius]);
-
-    // Heartbeat: keeps user "online" on server without draining battery
-    // It sends the LAST KNOWN coordinates every 10 seconds (network only, no GPS hardware usage)
-    useEffect(() => {
-        if (!locationGranted || !socketRef.current || !coords) return;
-
-        // Send immediately on change (initial or radius change)
-        socketRef.current.emit('location', {
-            latitude: coords.lat,
-            longitude: coords.lng,
-            radius,
-        });
-
-        // Setup interval for heartbeat (keeping online status)
-        const interval = setInterval(() => {
-            if (socketRef.current && coords) {
-                socketRef.current.emit('location', {
-                    latitude: coords.lat,
-                    longitude: coords.lng,
-                    radius,
-                });
-            }
-        }, 10000);
-
-        return () => clearInterval(interval);
-    }, [locationGranted, radius, coords]);
+    }, [showToast, radius, user?.id]);
 
     // Handle profile update
     const handleProfileUpdate = useCallback((updates) => {
@@ -182,21 +196,8 @@ export default function App() {
         if (socketRef.current) {
             socketRef.current.emit('updateProfile', updates);
         }
-        showToast('Профиль обновлён', 'success');
+        showToast('Profil saqlandi', 'success');
     }, [showToast]);
-
-    // Handle chat open
-    const handleOpenChat = useCallback((targetUser) => {
-        setSelectedUser(targetUser);
-        setShowChat(true);
-        setShowProfile(false);
-        // Clear unread for this user
-        setUnreadMessages((prev) => {
-            const next = { ...prev };
-            delete next[targetUser.id];
-            return next;
-        });
-    }, []);
 
     // Toggle invisible mode
     const handleToggleInvisible = useCallback(() => {
@@ -205,7 +206,7 @@ export default function App() {
         if (socketRef.current) {
             socketRef.current.emit('toggleInvisible', { invisible: newVal });
         }
-        showToast(newVal ? '👻 Режим невидимки включён' : '👁 Вы снова видимы', 'info');
+        showToast(newVal ? '👻 Ko\'rinmas rejim yoqildi' : '👁 Siz ko\'rinasiz', 'info');
     }, [invisible, showToast]);
 
     // Banned screen
@@ -215,7 +216,7 @@ export default function App() {
 
     // Location permission screen
     if (!locationGranted) {
-        return <LocationPermission onAllow={requestLocation} />;
+        return <LocationPermission onAllow={() => requestLocation(true)} />;
     }
 
     return (
@@ -226,7 +227,6 @@ export default function App() {
                     onClose={() => setShowAdmin(false)}
                 />
             )}
-            {/* Scan line effect */}
             <div className="scan-line pointer-events-none z-50 opacity-30" />
 
             <Header
@@ -245,12 +245,11 @@ export default function App() {
                     coords={coords}
                     nearbyUsers={nearbyUsers}
                     radius={radius}
-                    onSelectUser={handleOpenChat}
+                    onSelectUser={(u) => { setSelectedUser(u); setShowChat(true); setShowProfile(false); }}
                     unreadMessages={unreadMessages}
                     onRefreshLocation={() => requestLocation(false)}
                 />
 
-                {/* Chat Panel */}
                 {showChat && selectedUser && (
                     <ChatPanel
                         user={user}
@@ -261,7 +260,6 @@ export default function App() {
                     />
                 )}
 
-                {/* Profile Panel */}
                 {showProfile && (
                     <ProfilePanel
                         user={user}
@@ -271,7 +269,6 @@ export default function App() {
                 )}
             </main>
 
-            {/* Toast */}
             {toast && <Toast message={toast.message} type={toast.type} key={toast.id} />}
         </div>
     );

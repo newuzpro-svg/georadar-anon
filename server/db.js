@@ -35,7 +35,11 @@ export const db = {
         if (query.includes('INSERT INTO users')) {
             return {
                 run: (id, nickname, gender, photo_url, last_seen, created_at) => {
-                    users.set(id, { id, nickname, gender, photo_url, last_seen, created_at, blocked_users: '[]', is_invisible: 0 });
+                    users.set(id, {
+                        id, nickname, gender, photo_url, last_seen, created_at,
+                        blocked_users: '[]', is_invisible: 0,
+                        latitude: null, longitude: null
+                    });
                 }
             };
         }
@@ -160,13 +164,14 @@ export function haversineDistance(lat1, lon1, lat2, lon2) {
 
 export function findNearbyUsers(userId, lat, lon, radiusMeters = 100) {
     const now = Date.now();
-    const cutoff = now - 30000;
-    const delta = 0.002;
+    const cutoff = now - 120000; // 120 seconds (2 minutes)
+    const delta = 0.05; // ~5km delta to support larger radii
 
     const nearby = Array.from(users.values()).filter(u =>
         u.id !== userId &&
         u.last_seen > cutoff &&
         u.is_invisible === 0 &&
+        u.latitude !== null && u.longitude !== null &&
         u.latitude >= lat - delta && u.latitude <= lat + delta &&
         u.longitude >= lon - delta && u.longitude <= lon + delta
     );

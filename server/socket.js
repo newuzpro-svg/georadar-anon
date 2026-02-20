@@ -24,8 +24,10 @@ export function setupSocket(io) {
 
         // Register / reconnect user
         socket.on('register', (data) => {
-            const { userId, nickname, gender, photoUrl } = data;
+            const { userId, nickname, gender, photoUrl, latitude, longitude } = data;
             currentUserId = userId;
+
+            console.log(`👤 REGISTER: ${nickname} (${userId})`);
 
             // Check if banned
             const ban = bannedUsers.get(userId);
@@ -40,10 +42,21 @@ export function setupSocket(io) {
                 db.prepare(
                     'UPDATE users SET nickname = ?, gender = ?, photo_url = ?, last_seen = ? WHERE id = ?'
                 ).run(nickname, gender || 'not_selected', photoUrl || '', Date.now(), userId);
+
+                // If coordinates were sent during register, update them too
+                if (latitude && longitude) {
+                    db.prepare('UPDATE users SET latitude = ?, longitude = ?, last_seen = ? WHERE id = ?')
+                        .run(latitude, longitude, Date.now(), userId);
+                }
             } else {
                 db.prepare(
                     'INSERT INTO users (id, nickname, gender, photo_url, last_seen, created_at) VALUES (?, ?, ?, ?, ?, ?)'
                 ).run(userId, nickname, gender || 'not_selected', photoUrl || '', Date.now(), Date.now());
+
+                if (latitude && longitude) {
+                    db.prepare('UPDATE users SET latitude = ?, longitude = ?, last_seen = ? WHERE id = ?')
+                        .run(latitude, longitude, Date.now(), userId);
+                }
             }
 
             socket.join(`user:${userId}`);
@@ -52,6 +65,30 @@ export function setupSocket(io) {
 
         // Location update
         socket.on('location', (data) => {
+            if (!currentUserId && data.userId) {
+                // If userId is provided in location data and not yet registered, treat as registration
+                const { userId, nickname, gender, photoUrl } = data;
+                currentUserId = userId;
+
+                const ban = bannedUsers.get(userId);
+                if (ban && ban > Date.now()) {
+                    socket.emit('banned', { until: ban });
+                    return;
+                }
+
+                const existing = db.prepare('SELECT id FROM users WHERE id = ?').get(userId);
+                if (existing) {
+                    db.prepare(
+                        'UPDATE users SET nickname = ?, gender = ?, photo_url = ?, last_seen = ? WHERE id = ?'
+                    ).run(nickname || existing.nickname, gender || existing.gender || 'not_selected', photoUrl || existing.photo_url || '', Date.now(), userId);
+                } else {
+                    db.prepare(
+                        'INSERT INTO users (id, nickname, gender, photo_url, last_seen, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+                    ).run(userId, nickname || 'Anon', gender || 'not_selected', photoUrl || '', Date.now(), Date.now());
+                }
+                socket.join(`user:${userId}`);
+                socket.emit('registered', { success: true });
+            }
             if (!currentUserId) return;
 
             const { latitude, longitude, radius } = data;
@@ -81,6 +118,9 @@ export function setupSocket(io) {
                 longitude,
                 radius || 100
             );
+
+            // Detailed logging (optional: can be noisy but good for debug)
+            // console.log(`📍 LOCATION: [${currentUserId}] at ${latitude},${longitude} (Scan: ${radius}m, Found: ${nearbyUsers.length})`);
 
             socket.emit('nearby', nearbyUsers);
         });
