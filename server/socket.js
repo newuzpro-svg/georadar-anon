@@ -4,6 +4,8 @@ import { db, findNearbyUsers, checkSpeed } from './db.js';
 const rateLimits = new Map();
 // Banned users with expiry
 const bannedUsers = new Map();
+// Global reports queue
+const reports = [];
 
 // Simple profanity filter (expandable)
 const badWords = ['блять', 'сука', 'пиздец', 'хуй', 'ебать', 'fuck', 'shit', 'bitch', 'ass'];
@@ -213,7 +215,28 @@ export function setupSocket(io) {
         socket.on('reportUser', (data) => {
             if (!currentUserId) return;
             const { reportedId, reason } = data;
-            console.log(`⚠️ REPORT: User ${currentUserId} reported ${reportedId}. Reason: ${reason}`);
+
+            const sender = db.prepare('SELECT nickname FROM users WHERE id = ?').get(currentUserId);
+            const target = db.prepare('SELECT nickname FROM users WHERE id = ?').get(reportedId);
+
+            const report = {
+                id: Date.now(),
+                senderId: currentUserId,
+                senderName: sender?.nickname || 'Anon',
+                reportedId,
+                reportedName: target?.nickname || 'Anon',
+                reason,
+                timestamp: Date.now()
+            };
+
+            reports.push(report);
+            console.log(`⚠️ REPORT: ${report.senderName} -> ${report.reportedName}. Reason: ${reason}`);
+
+            // Notify all admins currently online
+            io.sockets.sockets.forEach(s => {
+                if (s.isAdmin) s.emit('adminNewReport', report);
+            });
+
             socket.emit('reportSent', { success: true });
         });
 
@@ -253,6 +276,18 @@ export function setupSocket(io) {
                 createdAt: Date.now(),
                 isBroadcast: true
             });
+        });
+
+        socket.on('adminGetReports', () => {
+            if (!socket.isAdmin) return;
+            socket.emit('adminReportList', reports);
+        });
+
+        socket.on('adminDismissReport', (data) => {
+            if (!socket.isAdmin) return;
+            const index = reports.findIndex(r => r.id === data.reportId);
+            if (index !== -1) reports.splice(index, 1);
+            socket.emit('adminReportList', reports);
         });
 
         // Disconnect
