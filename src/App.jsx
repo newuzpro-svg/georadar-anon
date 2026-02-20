@@ -123,13 +123,25 @@ export default function App() {
             },
             (err) => {
                 console.error('Geolocation error:', err);
-                let msg = 'Не удалось получить геолокацию';
-                if (err.code === 1) msg = 'Доступ запрещен. Пожалуйста, разрешите GPS в настройках.';
-                if (err.code === 2) msg = 'GPS сигнал недоступен';
-                if (err.code === 3) msg = 'Тайм-аут: не удалось найти GPS';
-                showToast(msg, 'error');
+                let msg = 'GPS aniqlanmadi, standart lokatsiya o‘rnatildi';
+                if (err.code === 1) msg = 'Ruxsat berilmadi, standart lokatsiya o‘rnatildi';
+
+                showToast(msg, 'warning');
+
+                // Fallback to a default location so the user is NEVER STUCK
+                const defaultCoords = { lat: 41.311081, lng: 69.240562 };
+                setCoords(defaultCoords);
+                setLocationGranted(true);
+
+                if (socketRef.current) {
+                    socketRef.current.emit('location', {
+                        latitude: defaultCoords.lat,
+                        longitude: defaultCoords.lng,
+                        radius,
+                    });
+                }
             },
-            { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
+            { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
         );
     }, [showToast, radius]);
 
