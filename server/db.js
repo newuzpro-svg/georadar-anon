@@ -88,7 +88,7 @@ export const db = {
         if (query.includes('SELECT blocked_users FROM users WHERE id = ?')) {
             return { get: (id) => users.get(id) };
         }
-        if (query.includes('SELECT id, sender_id as senderId, receiver_id as receiverId, message, created_at as createdAt FROM messages')) {
+        if (query.includes('FROM messages') && query.includes('ORDER BY created_at')) {
             return {
                 all: (cutoff, uid1, uid2, uid2_alt, uid1_alt) => {
                     return messages
@@ -114,7 +114,7 @@ export const db = {
                 }
             };
         }
-        if (query.includes('SELECT id, nickname, gender, photo_url, last_seen, created_at FROM users WHERE id = ?')) {
+        if (query.includes('FROM users WHERE id = ?')) {
             return { get: (id) => users.get(id) };
         }
 

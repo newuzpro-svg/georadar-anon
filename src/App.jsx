@@ -8,6 +8,7 @@ import ProfilePanel from './components/ProfilePanel.jsx';
 import Header from './components/Header.jsx';
 import BannedScreen from './components/BannedScreen.jsx';
 import Toast from './components/Toast.jsx';
+import { playNotificationSound } from './utils/sound.js';
 
 export default function App() {
     const [user, setUser] = useState(null);
@@ -66,6 +67,11 @@ export default function App() {
         });
 
         socket.on('newMessage', (msg) => {
+            // Play sound if another user sent it
+            if (user && msg.senderId !== user.id) {
+                playNotificationSound();
+            }
+
             // If chat is not open with this sender, mark as unread
             setUnreadMessages((prev) => {
                 const senderId = msg.senderId === user.id ? msg.receiverId : msg.senderId;
