@@ -72,140 +72,128 @@ export default function ProfilePanel({ user, onUpdate, onClose }) {
                 <h2 className="text-sm font-semibold text-radar-text font-mono tracking-wider">ПРОФИЛЬ</h2>
             </div>
 
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto px-4 py-6 scrollbar-thin">
-                {/* Avatar with upload */}
-                <div className="flex flex-col items-center mb-8">
-                    <div className="relative cursor-pointer group" onClick={() => fileRef.current?.click()}>
-                        <img
-                            src={photoUrl || generateAvatar(user.id, 96)}
-                            alt={user.nickname}
-                            className="w-24 h-24 rounded-full border-3 border-radar-accent shadow-[0_0_20px_rgba(var(--radar-accent-rgb),0.2)] object-cover"
-                        />
-                        <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <span className="text-xl">📷</span>
-                        </div>
-                        <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-radar-accent border-3 border-radar-panel flex items-center justify-center shadow-lg">
-                            <span className="text-[10px]">✏️</span>
-                        </div>
-                    </div>
-                    <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleProfilePhoto} />
-                    <p className="text-[10px] text-radar-muted mt-2">Bosing va rasm tanlang</p>
-                </div>
-
-                {/* Gallery Photos */}
-                <div className="mb-6">
-                    <label className="text-[10px] text-radar-muted font-mono uppercase tracking-[0.2em] mb-3 block">
-                        📸 Galereya ({photos.length}/2)
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                        {photos.map((p, i) => (
-                            <div key={i} className="relative aspect-square rounded-xl overflow-hidden border border-radar-ring group">
-                                <img src={p} alt={`photo-${i}`} className="w-full h-full object-cover" />
-                                <button
-                                    onClick={() => removeGalleryPhoto(i)}
-                                    className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-500/90 text-white text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                                >
-                                    ✕
-                                </button>
+            {/* Content — max-w for PC screens */}
+            <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-thin">
+                <div className="max-w-sm mx-auto">
+                    {/* Avatar + Gallery row: compact layout */}
+                    <div className="flex items-start gap-4 mb-6">
+                        {/* Profile Photo */}
+                        <div className="shrink-0 cursor-pointer group" onClick={() => fileRef.current?.click()}>
+                            <div className="relative">
+                                <img
+                                    src={photoUrl || generateAvatar(user.id, 72)}
+                                    alt={user.nickname}
+                                    className="w-[72px] h-[72px] rounded-2xl border-2 border-radar-accent/40 shadow-[0_0_15px_rgba(var(--radar-accent-rgb),0.15)] object-cover"
+                                />
+                                <div className="absolute inset-0 rounded-2xl bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <span className="text-lg">📷</span>
+                                </div>
+                                <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-radar-accent border-2 border-radar-panel flex items-center justify-center">
+                                    <span className="text-[8px]">✏️</span>
+                                </div>
                             </div>
-                        ))}
-                        {photos.length < 2 && (
-                            <button
-                                onClick={() => galleryRef.current?.click()}
-                                className="aspect-square rounded-xl border-2 border-dashed border-radar-ring hover:border-radar-accent/50 flex flex-col items-center justify-center gap-1 text-radar-muted hover:text-radar-accent transition-all"
-                            >
-                                <span className="text-2xl">+</span>
-                                <span className="text-[9px] font-mono">Rasm qo'shish</span>
-                            </button>
-                        )}
+                            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleProfilePhoto} />
+                        </div>
+
+                        {/* Gallery Photos - inline */}
+                        <div className="flex-1">
+                            <div className="text-[9px] text-radar-muted font-mono uppercase tracking-wider mb-1.5">📸 Galereya ({photos.length}/2)</div>
+                            <div className="flex gap-2">
+                                {photos.map((p, i) => (
+                                    <div key={i} className="relative w-14 h-14 rounded-xl overflow-hidden border border-radar-ring group shrink-0">
+                                        <img src={p} alt={`photo-${i}`} className="w-full h-full object-cover" />
+                                        <button
+                                            onClick={() => removeGalleryPhoto(i)}
+                                            className="absolute top-0 right-0 w-4 h-4 rounded-bl-md bg-red-500/90 text-white text-[8px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                ))}
+                                {photos.length < 2 && (
+                                    <button
+                                        onClick={() => galleryRef.current?.click()}
+                                        className="w-14 h-14 rounded-xl border border-dashed border-radar-ring hover:border-radar-accent/50 flex flex-col items-center justify-center text-radar-muted hover:text-radar-accent transition-all shrink-0"
+                                    >
+                                        <span className="text-lg leading-none">+</span>
+                                    </button>
+                                )}
+                            </div>
+                            <input ref={galleryRef} type="file" accept="image/*" multiple className="hidden" onChange={handleGalleryPhoto} />
+                        </div>
                     </div>
-                    <input ref={galleryRef} type="file" accept="image/*" multiple className="hidden" onChange={handleGalleryPhoto} />
-                </div>
 
-                {/* Nickname */}
-                <div className="mb-6">
-                    <label className="text-[10px] text-radar-muted font-mono uppercase tracking-[0.2em] mb-3 block">
-                        НИКНЕЙМ
-                    </label>
-                    <input
-                        type="text"
-                        value={nickname}
-                        onChange={(e) => setNickname(e.target.value)}
-                        maxLength={20}
-                        className="w-full bg-radar-dark/50 border border-radar-ring rounded-xl px-4 py-3 text-sm text-radar-text focus:border-radar-accent/50 focus:bg-radar-dark transition-all"
-                        placeholder="Введите ник"
-                    />
-                </div>
-
-                {/* Theme Selection */}
-                <div className="mb-6">
-                    <label className="text-[10px] text-radar-muted font-mono uppercase tracking-[0.2em] mb-3 block">
-                        ТЕМА ОФОРМЛЕНИЯ
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                        <button
-                            onClick={() => setTheme('violet')}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all border ${theme === 'violet'
-                                ? 'bg-indigo-900/30 border-purple-500 text-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.2)]'
-                                : 'bg-radar-dark/50 border-radar-ring text-radar-muted hover:border-radar-accent/30'
-                                }`}
-                        >
-                            <div className="w-4 h-4 rounded-full bg-purple-600" />
-                            Violet
-                        </button>
-                        <button
-                            onClick={() => setTheme('emerald')}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all border ${theme === 'emerald'
-                                ? 'bg-emerald-900/30 border-emerald-500 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
-                                : 'bg-radar-dark/50 border-radar-ring text-radar-muted hover:border-radar-accent/30'
-                                }`}
-                        >
-                            <div className="w-4 h-4 rounded-full bg-emerald-600" />
-                            Emerald
-                        </button>
+                    {/* Nickname */}
+                    <div className="mb-4">
+                        <label className="text-[10px] text-radar-muted font-mono uppercase tracking-[0.2em] mb-2 block">НИКНЕЙМ</label>
+                        <input
+                            type="text"
+                            value={nickname}
+                            onChange={(e) => setNickname(e.target.value)}
+                            maxLength={20}
+                            className="w-full bg-radar-dark/50 border border-radar-ring rounded-xl px-4 py-2.5 text-sm text-radar-text focus:border-radar-accent/50 focus:bg-radar-dark transition-all"
+                            placeholder="Ismingizni kiriting"
+                        />
                     </div>
-                </div>
 
-                {/* Gender */}
-                <div className="mb-8">
-                    <label className="text-[10px] text-radar-muted font-mono uppercase tracking-[0.2em] mb-3 block">
-                        ПОЛ
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                        {Object.entries(genderLabels).map(([key, label]) => (
+                    {/* Theme */}
+                    <div className="mb-4">
+                        <label className="text-[10px] text-radar-muted font-mono uppercase tracking-[0.2em] mb-2 block">ТЕМА</label>
+                        <div className="grid grid-cols-2 gap-2">
                             <button
-                                key={key}
-                                onClick={() => setGender(key)}
-                                className={`px-2 py-3 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border ${gender === key
-                                    ? key === 'female'
-                                        ? 'bg-pink-500/20 border-pink-500 text-pink-400 shadow-[0_0_10px_rgba(236,72,153,0.2)]'
-                                        : 'bg-radar-accent/20 border-radar-accent text-radar-accent shadow-[0_0_10px_rgba(var(--radar-accent-rgb),0.1)]'
-                                    : 'bg-radar-dark/50 border-radar-ring text-radar-muted hover:border-radar-accent/20'
+                                onClick={() => setTheme('violet')}
+                                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[11px] font-semibold transition-all border ${theme === 'violet'
+                                    ? 'bg-indigo-900/30 border-purple-500 text-purple-400'
+                                    : 'bg-radar-dark/50 border-radar-ring text-radar-muted hover:border-radar-accent/30'
                                     }`}
                             >
-                                {label}
+                                <div className="w-3 h-3 rounded-full bg-purple-600" /> Violet
                             </button>
-                        ))}
+                            <button
+                                onClick={() => setTheme('emerald')}
+                                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[11px] font-semibold transition-all border ${theme === 'emerald'
+                                    ? 'bg-emerald-900/30 border-emerald-500 text-emerald-400'
+                                    : 'bg-radar-dark/50 border-radar-ring text-radar-muted hover:border-radar-accent/30'
+                                    }`}
+                            >
+                                <div className="w-3 h-3 rounded-full bg-emerald-600" /> Emerald
+                            </button>
+                        </div>
                     </div>
-                </div>
 
-                {/* Save button */}
-                <button
-                    onClick={handleSave}
-                    disabled={saving || !nickname.trim()}
-                    className="w-full btn-glow py-4 rounded-xl bg-gradient-to-r from-radar-accent to-radar-panel text-radar-bg font-bold text-xs uppercase tracking-[0.2em] transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 mb-8"
-                >
-                    {saving ? '✓ СОХРАНЕНО' : 'СОХРАНИТЬ ИЗМЕНЕНИЯ'}
-                </button>
+                    {/* Gender */}
+                    <div className="mb-5">
+                        <label className="text-[10px] text-radar-muted font-mono uppercase tracking-[0.2em] mb-2 block">ПОЛ</label>
+                        <div className="grid grid-cols-3 gap-1.5">
+                            {Object.entries(genderLabels).map(([key, label]) => (
+                                <button
+                                    key={key}
+                                    onClick={() => setGender(key)}
+                                    className={`px-1.5 py-2 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all border ${gender === key
+                                        ? key === 'female'
+                                            ? 'bg-pink-500/20 border-pink-500 text-pink-400'
+                                            : 'bg-radar-accent/20 border-radar-accent text-radar-accent'
+                                        : 'bg-radar-dark/50 border-radar-ring text-radar-muted hover:border-radar-accent/20'
+                                        }`}
+                                >
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
 
-                {/* Info */}
-                <div className="mt-4 space-y-3">
-                    <div className="glass rounded-xl p-4">
-                        <h3 className="text-xs font-semibold text-radar-accent mb-2">🔒 Анонимность</h3>
-                        <p className="text-xs text-radar-muted leading-relaxed">
-                            Ваш профиль полностью анонимный. Нет email, нет телефона, нет регистрации.
-                        </p>
+                    {/* Save button */}
+                    <button
+                        onClick={handleSave}
+                        disabled={saving || !nickname.trim()}
+                        className="w-full btn-glow py-3 rounded-xl bg-gradient-to-r from-radar-accent to-radar-panel text-radar-bg font-bold text-xs uppercase tracking-[0.2em] transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 mb-4"
+                    >
+                        {saving ? '✓ СОХРАНЕНО' : 'СОХРАНИТЬ'}
+                    </button>
+
+                    {/* Info */}
+                    <div className="glass rounded-xl p-3 text-xs text-radar-muted leading-relaxed">
+                        🔒 Профиль анонимный. Удаляется через 24ч неактивности.
                     </div>
                 </div>
             </div>

@@ -111,6 +111,10 @@ export function setupSocket(io) {
                 'UPDATE users SET latitude = ?, longitude = ?, last_seen = ? WHERE id = ?'
             ).run(latitude, longitude, Date.now(), currentUserId);
 
+            // Store radius for server-side broadcast
+            const uObj = db.prepare('SELECT id FROM users WHERE id = ?').get(currentUserId);
+            if (uObj) uObj._lastRadius = radius || 100;
+
             // Find nearby users
             const nearbyUsers = findNearbyUsers(
                 currentUserId,
@@ -341,7 +345,38 @@ export function setupSocket(io) {
         socket.on('disconnect', () => {
             if (currentUserId) {
                 db.prepare('UPDATE users SET last_seen = ? WHERE id = ?').run(Date.now(), currentUserId);
+                connectedSockets.delete(socket.id);
             }
         });
+
+        // Track this socket for server-side push
+        if (!socket._tracked) {
+            socket._tracked = true;
+            socket._getUserId = () => currentUserId;
+        }
     });
+
+    // --- SERVER-SIDE PUSH: broadcast nearby users to ALL connected sockets every 5s ---
+    const connectedSockets = io.sockets;
+    setInterval(() => {
+        const sockets = connectedSockets.sockets;
+        if (!sockets || sockets.size === 0) return;
+
+        for (const [socketId, sock] of sockets) {
+            const userId = sock._getUserId?.();
+            if (!userId) continue;
+
+            const userObj = db.prepare('SELECT id FROM users WHERE id = ?').get(userId);
+            if (!userObj || !userObj.latitude || !userObj.longitude) continue;
+
+            const nearby = findNearbyUsers(
+                userId,
+                userObj.latitude,
+                userObj.longitude,
+                userObj._lastRadius || 100
+            );
+
+            sock.emit('nearby', nearby);
+        }
+    }, 5000);
 }

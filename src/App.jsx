@@ -134,7 +134,7 @@ export default function App() {
 
     // Heartbeat: keeps user "online"
     useEffect(() => {
-        if (!locationGranted || !connected || !socketRef.current || !coords) return;
+        if (!locationGranted || !connected || !socketRef.current || !coords || !user) return;
 
         const sendLocation = () => {
             if (socketRef.current && socketRef.current.connected) {
@@ -147,22 +147,44 @@ export default function App() {
             }
         };
 
-        const interval = setInterval(sendLocation, 10000);
+        // Send immediately
+        sendLocation();
 
-        // Browser focus recovery: Some browsers (Yandex/MIUI) aggressive throttle in background
-        const handleFocus = () => {
-            if (socketRef.current && !socketRef.current.connected) {
+        const interval = setInterval(sendLocation, 8000);
+
+        // Recovery on tab focus / phone unlock
+        const handleRecovery = () => {
+            if (!socketRef.current) return;
+            if (!socketRef.current.connected) {
                 socketRef.current.connect();
+            } else {
+                // Re-register in case server lost session
+                socketRef.current.emit('register', {
+                    userId: user.id,
+                    nickname: user.nickname,
+                    gender: user.gender,
+                    photoUrl: user.photoUrl || '',
+                    photos: user.photos || [],
+                    latitude: coordsRef.current?.lat,
+                    longitude: coordsRef.current?.lng,
+                });
+                sendLocation();
             }
-            sendLocation();
         };
-        window.addEventListener('focus', handleFocus);
+
+        const handleVisibility = () => {
+            if (document.visibilityState === 'visible') handleRecovery();
+        };
+
+        window.addEventListener('focus', handleRecovery);
+        document.addEventListener('visibilitychange', handleVisibility);
 
         return () => {
             clearInterval(interval);
-            window.removeEventListener('focus', handleFocus);
+            window.removeEventListener('focus', handleRecovery);
+            document.removeEventListener('visibilitychange', handleVisibility);
         };
-    }, [locationGranted, connected, coords, user?.id]);
+    }, [locationGranted, connected, coords, user]);
 
     // Request geolocation
     const requestLocation = useCallback((isInitial = true) => {
