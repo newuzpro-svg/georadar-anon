@@ -343,40 +343,49 @@ export function setupSocket(io) {
 
         // Disconnect
         socket.on('disconnect', () => {
+            console.log(`❌ DISCONNECT: ${currentUserId?.substring(0, 8) || 'unknown'} (${socket.id})`);
             if (currentUserId) {
                 db.prepare('UPDATE users SET last_seen = ? WHERE id = ?').run(Date.now(), currentUserId);
-                connectedSockets.delete(socket.id);
             }
         });
 
         // Track this socket for server-side push
-        if (!socket._tracked) {
-            socket._tracked = true;
-            socket._getUserId = () => currentUserId;
-        }
+        socket._getUserId = () => currentUserId;
+        socket._getLastLocation = () => {
+            if (!currentUserId) return null;
+            const u = db.prepare('SELECT id FROM users WHERE id = ?').get(currentUserId);
+            return u && u.latitude && u.longitude ? u : null;
+        };
     });
 
     // --- SERVER-SIDE PUSH: broadcast nearby users to ALL connected sockets every 5s ---
-    const connectedSockets = io.sockets;
     setInterval(() => {
-        const sockets = connectedSockets.sockets;
-        if (!sockets || sockets.size === 0) return;
+        try {
+            const sockets = io.sockets.sockets;
+            if (!sockets || sockets.size === 0) return;
 
-        for (const [socketId, sock] of sockets) {
-            const userId = sock._getUserId?.();
-            if (!userId) continue;
+            for (const [, sock] of sockets) {
+                try {
+                    const userId = sock._getUserId?.();
+                    if (!userId) continue;
 
-            const userObj = db.prepare('SELECT id FROM users WHERE id = ?').get(userId);
-            if (!userObj || !userObj.latitude || !userObj.longitude) continue;
+                    const userObj = sock._getLastLocation?.();
+                    if (!userObj) continue;
 
-            const nearby = findNearbyUsers(
-                userId,
-                userObj.latitude,
-                userObj.longitude,
-                userObj._lastRadius || 100
-            );
+                    const nearby = findNearbyUsers(
+                        userId,
+                        userObj.latitude,
+                        userObj.longitude,
+                        userObj._lastRadius || 100
+                    );
 
-            sock.emit('nearby', nearby);
+                    sock.emit('nearby', nearby);
+                } catch (e) {
+                    // Skip this socket silently
+                }
+            }
+        } catch (err) {
+            console.error('Broadcast error:', err.message);
         }
     }, 5000);
 }
