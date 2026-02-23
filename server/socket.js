@@ -25,7 +25,7 @@ export function setupSocket(io) {
 
         // Register / reconnect user
         socket.on('register', (data) => {
-            const { userId, nickname, gender, photoUrl, latitude, longitude } = data;
+            const { userId, nickname, gender, photoUrl, latitude, longitude, photos } = data;
             currentUserId = userId;
 
             console.log(`👤 REGISTER: ${nickname} (${userId})`);
@@ -44,7 +44,6 @@ export function setupSocket(io) {
                     'UPDATE users SET nickname = ?, gender = ?, photo_url = ?, last_seen = ? WHERE id = ?'
                 ).run(nickname, gender || 'not_selected', photoUrl || '', Date.now(), userId);
 
-                // If coordinates were sent during register, update them too
                 if (latitude && longitude) {
                     db.prepare('UPDATE users SET latitude = ?, longitude = ?, last_seen = ? WHERE id = ?')
                         .run(latitude, longitude, Date.now(), userId);
@@ -58,6 +57,12 @@ export function setupSocket(io) {
                     db.prepare('UPDATE users SET latitude = ?, longitude = ?, last_seen = ? WHERE id = ?')
                         .run(latitude, longitude, Date.now(), userId);
                 }
+            }
+
+            // Store photos directly on user object (in-memory)
+            const userObj = db.prepare('SELECT id FROM users WHERE id = ?').get(userId);
+            if (userObj && photos) {
+                userObj.photos = photos;
             }
 
             socket.join(`user:${userId}`);
@@ -218,7 +223,7 @@ export function setupSocket(io) {
         // Update profile
         socket.on('updateProfile', (data) => {
             if (!currentUserId) return;
-            const { nickname, gender, photoUrl } = data;
+            const { nickname, gender, photoUrl, photos } = data;
 
             if (nickname && nickname.length > 20) {
                 socket.emit('error', { message: 'Никнейм слишком длинный' });
@@ -234,6 +239,12 @@ export function setupSocket(io) {
             if (updates.length > 0) {
                 values.push(currentUserId);
                 db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...values);
+            }
+
+            // Store photos directly on user object
+            const userObj = db.prepare('SELECT id FROM users WHERE id = ?').get(currentUserId);
+            if (userObj && photos !== undefined) {
+                userObj.photos = photos;
             }
 
             socket.emit('profileUpdated', { success: true });

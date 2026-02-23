@@ -73,7 +73,8 @@ export default function App() {
                 userId: user.id,
                 nickname: user.nickname,
                 gender: user.gender,
-                photoUrl: user.photoUrl,
+                photoUrl: user.photoUrl || '',
+                photos: user.photos || [],
                 latitude: coordsRef.current?.lat,
                 longitude: coordsRef.current?.lng,
             });

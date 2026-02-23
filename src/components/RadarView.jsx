@@ -255,33 +255,39 @@ export default function RadarView({ coords, nearbyUsers, radius, onSelectUser, u
                             </span>
                         </div>
                         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
-                            {nearbyUsers.map((u) => (
-                                <button
-                                    key={u.id}
-                                    onClick={() => onSelectUser(u)}
-                                    className="shrink-0 flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-radar-accent/10 transition-all group relative"
-                                >
-                                    <div className="relative">
-                                        <img
-                                            src={u.photo_url || generateAvatar(u.id, 40)}
-                                            alt={u.nickname}
-                                            className="w-10 h-10 rounded-full border-2 border-radar-green/50 group-hover:border-radar-accent transition-colors"
-                                        />
-                                        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-radar-green border-2 border-radar-bg" />
-                                        {unreadMessages[u.id] && (
-                                            <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-radar-danger text-[8px] font-bold flex items-center justify-center text-white">
-                                                {unreadMessages[u.id] > 9 ? '9+' : unreadMessages[u.id]}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <span className="text-[10px] text-radar-muted group-hover:text-radar-text transition-colors max-w-[60px] truncate">
-                                        {u.nickname}
-                                    </span>
-                                    <span className="text-[9px] text-radar-accent/60 font-mono">
-                                        {u.distance}м
-                                    </span>
-                                </button>
-                            ))}
+                            {nearbyUsers.map((u) => {
+                                const isFemale = u.gender === 'female';
+                                return (
+                                    <button
+                                        key={u.id}
+                                        onClick={() => onSelectUser(u)}
+                                        className="shrink-0 flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-radar-accent/10 transition-all group relative"
+                                    >
+                                        <div className="relative">
+                                            <img
+                                                src={u.photo_url || generateAvatar(u.id, 40)}
+                                                alt={u.nickname}
+                                                className={`w-10 h-10 rounded-full border-2 ${isFemale ? 'border-pink-500/60' : 'border-radar-green/50'} group-hover:border-radar-accent transition-colors object-cover`}
+                                            />
+                                            <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full ${isFemale ? 'bg-pink-500' : 'bg-radar-green'} border-2 border-radar-bg`} />
+                                            {isFemale && (
+                                                <div className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-pink-500/90 text-[8px] font-bold flex items-center justify-center text-white">♀</div>
+                                            )}
+                                            {unreadMessages[u.id] && (
+                                                <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-radar-danger text-[8px] font-bold flex items-center justify-center text-white">
+                                                    {unreadMessages[u.id] > 9 ? '9+' : unreadMessages[u.id]}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <span className={`text-[10px] ${isFemale ? 'text-pink-300' : 'text-radar-muted'} group-hover:text-radar-text transition-colors max-w-[60px] truncate`}>
+                                            {u.nickname}
+                                        </span>
+                                        <span className="text-[9px] text-radar-accent/60 font-mono">
+                                            {u.distance}м
+                                        </span>
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
