@@ -46,8 +46,12 @@ export default function Header({
                         onChange={(e) => onRadiusChange(Number(e.target.value))}
                         className="bg-transparent text-lg font-bold text-radar-accent font-mono appearance-none cursor-pointer text-center"
                     >
-                        <option value={50} className="bg-radar-dark">50м</option>
                         <option value={100} className="bg-radar-dark">100м</option>
+                        <option value={500} className="bg-radar-dark">500м</option>
+                        <option value={1000} className="bg-radar-dark">1км</option>
+                        <option value={2000} className="bg-radar-dark">2км</option>
+                        <option value={5000} className="bg-radar-dark">5км</option>
+                        <option value={10000} className="bg-radar-dark">10км</option>
                     </select>
                     <div className="text-[9px] text-radar-muted uppercase tracking-wider">Радиус</div>
                 </div>

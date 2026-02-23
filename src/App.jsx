@@ -24,13 +24,13 @@ export default function App() {
     const [connected, setConnected] = useState(false);
     const [banned, setBanned] = useState(null);
     const [toast, setToast] = useState(null);
-    const [radius, setRadius] = useState(100);
+    const [radius, setRadius] = useState(5000);
     const [invisible, setInvisible] = useState(false);
     const [unreadMessages, setUnreadMessages] = useState({});
 
     const socketRef = useRef(null);
     const coordsRef = useRef(null);
-    const radiusRef = useRef(100);
+    const radiusRef = useRef(5000);
 
     // Sync refs for use in socket handlers without re-subscribing
     useEffect(() => { coordsRef.current = coords; }, [coords]);
